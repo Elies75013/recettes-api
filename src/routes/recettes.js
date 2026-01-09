@@ -1,3 +1,23 @@
+/**
+ * =================================================================
+ * Routes des Recettes
+ * =================================================================
+ * 
+ * Ce fichier définit toutes les routes pour la gestion des recettes.
+ * Chaque route est documentée avec Swagger pour l'API.
+ * 
+ * Routes disponibles:
+ * - POST   /recettes              : Créer une recette (auth requise)
+ * - GET    /recettes              : Lister les recettes (filtres/pagination)
+ * - GET    /recettes/:id          : Détail d'une recette
+ * - PUT    /recettes/:id          : Modifier une recette (auth requise)
+ * - DELETE /recettes/:id          : Supprimer une recette (auth requise)
+ * - POST   /recettes/:id/aimer    : Aimer une recette
+ * - GET    /recettes/:id/commentaires    : Lister les commentaires
+ * - POST   /recettes/:id/commentaires    : Ajouter un commentaire
+ * - DELETE /recettes/:id/commentaires/:commentaireId : Supprimer un commentaire
+ */
+
 const express = require("express");
 const router = express.Router();
 const recettesController = require("../controllers/recettesController");

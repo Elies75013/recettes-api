@@ -1,3 +1,18 @@
+/**
+ * =================================================================
+ * Routes des Utilisateurs et Authentification
+ * =================================================================
+ * 
+ * Ce fichier définit les routes pour la gestion des utilisateurs
+ * et l'authentification JWT.
+ * 
+ * Routes disponibles:
+ * - POST /utilisateurs/inscription : Créer un compte
+ * - POST /utilisateurs/connexion   : Se connecter (obtenir un token)
+ * - GET  /utilisateurs/profil      : Voir son profil (auth requise)
+ * - GET  /utilisateurs             : Lister tous les utilisateurs
+ */
+
 const express = require("express");
 const router = express.Router();
 const utilisateursController = require("../controllers/utilisateursController");
@@ -5,7 +20,18 @@ const { authentifier } = require("../middleware/auth");
 const { body, validationResult } = require("express-validator");
 const { ApiError } = require("../middleware/errorHandler");
 
-// Middleware de validation
+// =================================================================
+// MIDDLEWARES DE VALIDATION
+// =================================================================
+
+/**
+ * Validation pour l'inscription d'un nouvel utilisateur
+ * 
+ * Champs validés:
+ * - nom: 2-50 caractères
+ * - email: format email valide
+ * - motDePasse: minimum 6 caractères
+ */
 const validerInscription = [
   body("nom")
     .trim()
@@ -35,6 +61,13 @@ const validerInscription = [
   },
 ];
 
+/**
+ * Validation pour la connexion d'un utilisateur
+ * 
+ * Champs validés:
+ * - email: format email valide
+ * - motDePasse: non vide
+ */
 const validerConnexion = [
   body("email")
     .trim()

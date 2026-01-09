@@ -1,7 +1,27 @@
+/**
+ * =================================================================
+ * Contrôleur des Recettes
+ * =================================================================
+ * 
+ * Ce module contient toutes les fonctions de contrôle pour
+ * la gestion des recettes (CRUD) et des commentaires.
+ */
+
 const Recette = require("../models/Recette");
 const { ApiError } = require("../middleware/errorHandler");
 
-// Ajouter une recette
+// =================================================================
+// GESTION DES RECETTES (CRUD)
+// =================================================================
+
+/**
+ * Créer une nouvelle recette
+ * POST /recettes
+ * 
+ * @param {Request} req - Corps: { titre, ingredients, etapes, auteur }
+ * @param {Response} res - Renvoie la recette créée
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ */
 exports.creerRecette = async (req, res, next) => {
   try {
     const recette = new Recette(req.body);
@@ -16,12 +36,29 @@ exports.creerRecette = async (req, res, next) => {
   }
 };
 
-// Lire toutes les recettes avec filtrage et tri
+/**
+ * Récupérer toutes les recettes avec filtrage, tri et pagination
+ * GET /recettes
+ * 
+ * @param {Request} req - Query params: { ingredient?, auteur?, tri?, page?, limite? }
+ * @param {Response} res - Liste paginée des recettes
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * 
+ * Filtres disponibles:
+ * - ingredient: recherche partielle insensible à la casse
+ * - auteur: recherche partielle insensible à la casse
+ * 
+ * Tri disponible:
+ * - date / -date: par date (croissant / décroissant)
+ * - popularite / -popularite: par popularité
+ */
 exports.obtenirRecettes = async (req, res, next) => {
   try {
     const { ingredient, auteur, tri, page = 1, limite = 10 } = req.query;
 
-    // Construction du filtre
+    // -----------------------------------------------------------------
+    // Construction du filtre MongoDB
+    // -----------------------------------------------------------------
     const filtre = {};
 
     // Filtrage par ingrédient (recherche partielle insensible à la casse)
@@ -82,7 +119,15 @@ exports.obtenirRecettes = async (req, res, next) => {
   }
 };
 
-// Lire une recette par ID
+/**
+ * Récupérer une recette par son ID
+ * GET /recettes/:id
+ * 
+ * @param {Request} req - Param: id (ObjectId MongoDB)
+ * @param {Response} res - Détails complets de la recette
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette n'existe pas
+ */
 exports.obtenirRecetteParId = async (req, res, next) => {
   try {
     const recette = await Recette.findById(req.params.id);
@@ -98,9 +143,20 @@ exports.obtenirRecetteParId = async (req, res, next) => {
   }
 };
 
-// Modifier une recette
+/**
+ * Modifier une recette existante
+ * PUT /recettes/:id
+ * 
+ * @param {Request} req - Param: id, Corps: champs à modifier
+ * @param {Response} res - Recette mise à jour
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette n'existe pas
+ */
 exports.modifierRecette = async (req, res, next) => {
   try {
+    // findByIdAndUpdate avec options:
+    // - new: true -> retourne le document modifié
+    // - runValidators: true -> exécute les validations du schéma
     const recette = await Recette.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -119,7 +175,15 @@ exports.modifierRecette = async (req, res, next) => {
   }
 };
 
-// Supprimer une recette
+/**
+ * Supprimer une recette
+ * DELETE /recettes/:id
+ * 
+ * @param {Request} req - Param: id de la recette à supprimer
+ * @param {Response} res - Message de confirmation
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette n'existe pas
+ */
 exports.supprimerRecette = async (req, res, next) => {
   try {
     const recette = await Recette.findByIdAndDelete(req.params.id);
@@ -135,7 +199,21 @@ exports.supprimerRecette = async (req, res, next) => {
   }
 };
 
-// Ajouter un commentaire à une recette
+// =================================================================
+// GESTION DES COMMENTAIRES
+// =================================================================
+
+/**
+ * Ajouter un commentaire à une recette
+ * POST /recettes/:id/commentaires
+ * 
+ * @param {Request} req - Param: id, Corps: { auteur, contenu }
+ * @param {Response} res - Recette avec le nouveau commentaire
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette n'existe pas
+ * 
+ * Note: Chaque commentaire augmente la popularité de la recette de 1
+ */
 exports.ajouterCommentaire = async (req, res, next) => {
   try {
     const recette = await Recette.findById(req.params.id);
@@ -163,9 +241,18 @@ exports.ajouterCommentaire = async (req, res, next) => {
   }
 };
 
-// Obtenir les commentaires d'une recette
+/**
+ * Récupérer tous les commentaires d'une recette
+ * GET /recettes/:id/commentaires
+ * 
+ * @param {Request} req - Param: id de la recette
+ * @param {Response} res - Liste des commentaires avec titre de la recette
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette n'existe pas
+ */
 exports.obtenirCommentaires = async (req, res, next) => {
   try {
+    // Sélectionne uniquement les champs nécessaires pour optimiser
     const recette = await Recette.findById(req.params.id).select("commentaires titre");
     if (!recette) {
       throw new ApiError(404, "Recette non trouvée");
@@ -184,7 +271,17 @@ exports.obtenirCommentaires = async (req, res, next) => {
   }
 };
 
-// Supprimer un commentaire
+/**
+ * Supprimer un commentaire d'une recette
+ * DELETE /recettes/:id/commentaires/:commentaireId
+ * 
+ * @param {Request} req - Params: id (recette), commentaireId
+ * @param {Response} res - Message de confirmation
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette ou le commentaire n'existe pas
+ * 
+ * Note: La suppression diminue la popularité de 1 (minimum 0)
+ */
 exports.supprimerCommentaire = async (req, res, next) => {
   try {
     const { id, commentaireId } = req.params;
@@ -217,7 +314,21 @@ exports.supprimerCommentaire = async (req, res, next) => {
   }
 };
 
-// Augmenter la popularité (like)
+// =================================================================
+// FONCTIONNALITÉS SOCIALES
+// =================================================================
+
+/**
+ * Aimer une recette (augmenter la popularité)
+ * POST /recettes/:id/aimer
+ * 
+ * @param {Request} req - Param: id de la recette
+ * @param {Response} res - Nouvelle valeur de popularité
+ * @param {Function} next - Fonction next pour la gestion d'erreurs
+ * @throws {ApiError} 404 si la recette n'existe pas
+ * 
+ * Utilise l'opérateur $inc pour une incrémentation atomique
+ */
 exports.aimerRecette = async (req, res, next) => {
   try {
     const recette = await Recette.findByIdAndUpdate(

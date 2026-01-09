@@ -1,10 +1,32 @@
+/**
+ * =================================================================
+ * Middlewares de Validation
+ * =================================================================
+ * 
+ * Ce module utilise express-validator pour valider les données
+ * des requêtes avant qu'elles n'atteignent les contrôleurs.
+ */
+
 const { body, param, query, validationResult } = require("express-validator");
 const { ApiError } = require("./errorHandler");
 
-// Middleware pour vérifier les résultats de validation
+// =================================================================
+// MIDDLEWARE DE BASE
+// =================================================================
+
+/**
+ * Middleware pour vérifier les résultats de validation
+ * À utiliser en dernier dans la chaîne de validation
+ * 
+ * @param {Request} req - Requête Express
+ * @param {Response} res - Réponse Express
+ * @param {Function} next - Fonction next
+ * @throws {ApiError} 400 si des erreurs de validation sont présentes
+ */
 const validerResultat = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    // Formate les erreurs pour une réponse claire
     const details = errors.array().map((err) => ({
       champ: err.path,
       message: err.msg,
@@ -15,7 +37,20 @@ const validerResultat = (req, res, next) => {
   next();
 };
 
-// Validation pour créer/modifier une recette
+// =================================================================
+// VALIDATION DES RECETTES
+// =================================================================
+
+/**
+ * Validation pour la création d'une recette
+ * Tous les champs sont obligatoires
+ * 
+ * Champs validés:
+ * - titre: 3-100 caractères, non vide
+ * - ingredients: tableau non vide de chaînes
+ * - etapes: tableau non vide de chaînes
+ * - auteur: non vide
+ */
 const validerRecette = [
   body("titre")
     .trim()
@@ -50,7 +85,10 @@ const validerRecette = [
   validerResultat,
 ];
 
-// Validation pour modifier une recette (champs optionnels)
+/**
+ * Validation pour la modification d'une recette
+ * Tous les champs sont optionnels mais validés s'ils sont présents
+ */
 const validerRecetteModification = [
   body("titre")
     .optional()
@@ -91,7 +129,14 @@ const validerRecetteModification = [
   validerResultat,
 ];
 
-// Validation d'un ID MongoDB
+// =================================================================
+// VALIDATION DES PARAMÈTRES
+// =================================================================
+
+/**
+ * Validation d'un ID MongoDB dans les paramètres d'URL
+ * Vérifie que l'ID est un ObjectId valide (24 caractères hex)
+ */
 const validerIdMongo = [
   param("id")
     .isMongoId()
@@ -99,7 +144,17 @@ const validerIdMongo = [
   validerResultat,
 ];
 
-// Validation pour un commentaire
+// =================================================================
+// VALIDATION DES COMMENTAIRES
+// =================================================================
+
+/**
+ * Validation pour l'ajout d'un commentaire
+ * 
+ * Champs validés:
+ * - auteur: obligatoire, non vide
+ * - contenu: obligatoire, max 500 caractères
+ */
 const validerCommentaire = [
   body("auteur")
     .trim()
@@ -116,7 +171,21 @@ const validerCommentaire = [
   validerResultat,
 ];
 
-// Validation des paramètres de requête pour le filtrage/tri
+// =================================================================
+// VALIDATION DES QUERY PARAMS (FILTRAGE/TRI)
+// =================================================================
+
+/**
+ * Validation des paramètres de filtrage et pagination
+ * Tous les paramètres sont optionnels
+ * 
+ * Paramètres:
+ * - ingredient: filtre par ingrédient
+ * - auteur: filtre par auteur
+ * - tri: date, -date, popularite, -popularite
+ * - page: entier >= 1
+ * - limite: entier entre 1 et 100
+ */
 const validerFiltrage = [
   query("ingredient")
     .optional()
